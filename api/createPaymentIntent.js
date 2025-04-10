@@ -9,21 +9,31 @@ module.exports = async (req, res) => {
     return res.status(200).json({});
   }
 
-  try {
-    const { amount } = req.body;
-    if (!amount) {
-      return res.status(400).json({ error: "Amount is required" });
+  // Parse the request body manually for Vercel
+  let body = "";
+  req.on("data", (chunk) => {
+    body += chunk.toString();
+  });
+
+  req.on("end", async () => {
+    try {
+      const parsedBody = body ? JSON.parse(body) : {};
+      const { amount } = parsedBody;
+
+      if (!amount) {
+        return res.status(400).json({ error: "Amount is required" });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount, // Amount in cents (e.g., 5000 = $50.00)
+        currency: "usd",
+        automatic_payment_methods: { enabled: true },
+      });
+
+      res.status(200).json({ clientSecret: paymentIntent.client_secret });
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: error.message });
     }
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount, // Amount in cents (e.g., 5000 = $50.00)
-      currency: "usd",
-      automatic_payment_methods: { enabled: true },
-    });
-
-    res.status(200).json({ clientSecret: paymentIntent.client_secret });
-  } catch (error) {
-    console.error("Error creating payment intent:", error);
-    res.status(500).json({ error: error.message });
-  }
+  });
 };
