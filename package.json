@@ -1,0 +1,7 @@
+{
+    "name": "build-buddy-backend",
+    "version": "1.0.0",
+    "dependencies": {
+      "stripe": "^15.8.0"
+    }
+  }
